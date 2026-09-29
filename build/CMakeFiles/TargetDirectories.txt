@@ -1,0 +1,3 @@
+/home/mf/C++Projekt/lowLvlMavsdkProject/build/CMakeFiles/ApkaMavsdk.dir
+/home/mf/C++Projekt/lowLvlMavsdkProject/build/CMakeFiles/edit_cache.dir
+/home/mf/C++Projekt/lowLvlMavsdkProject/build/CMakeFiles/rebuild_cache.dir

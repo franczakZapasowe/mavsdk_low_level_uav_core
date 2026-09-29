@@ -1,0 +1,1 @@
+/usr/lib/ccache/c++ -Wl,--dependency-file=CMakeFiles/ApkaMavsdk.dir/link.d CMakeFiles/ApkaMavsdk.dir/main.cpp.o -o ApkaMavsdk
