@@ -6,7 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(MAVSDK REQUIRED)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp
+        telemetry/TelemetryFrame.h
+        core/RingBuffer.h
+        telemetry/Ingestor.h)
 
 if(TARGET mavsdk::mavsdk)
     target_link_libraries(${PROJECT_NAME} PRIVATE mavsdk::mavsdk)
