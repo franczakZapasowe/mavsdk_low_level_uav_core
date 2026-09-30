@@ -19,5 +19,5 @@ struct TelemetryFrame {
     std::chrono::steady_clock timestamp_us;
 };
 
-static_assert(std::is_standard_layout<TelemetryFrame>);
+static_assert(std::is_standard_layout<TelemetryFrame>());
 static_assert(std::is_trivially_copyable_v<TelemetryFrame>);

@@ -1,7 +1,6 @@
 #pragma once
 #include "..//telemetry/TelemetryFrame.h"
 #include <array>
-#include <iostream>
 #include <atomic>
 
 template<typename T, size_t Capacity >
@@ -14,7 +13,7 @@ class RingBuffer {
 public:
     [[nodiscard]] bool try_push(const T& element);
     [[nodiscard]] bool try_pull(T& element);
-    void push_overwrtie();
+    void push_overwrite(const T& element);
 };
 
 
@@ -38,7 +37,15 @@ bool RingBuffer<T, Capacity>::try_pull(T&element) {
 }
 
 template<typename T, size_t Capacity>
-void RingBuffer<T, Capacity>::push_overwrtie() {
-
+void RingBuffer<T, Capacity>::push_overwrite(const T& element) {
+        auto aktualnyTail = tail.load(std::memory_order_acquire);
+        auto aktualnyHead = head.load(std::memory_order_acquire);
+        while ((aktualnyHead + 1) %Capacity == aktualnyTail) {
+            if (tail.compare_exchange_weak(aktualnyTail,(aktualnyTail+1)%Capacity,std::memory_order_release,std::memory_order_acquire)) {
+                break;
+            }
+        }
+        buffer[aktualnyHead] = element;
+        head.store((aktualnyHead + 1) %Capacity, std::memory_order_release);
 }
 
