@@ -1,51 +1,42 @@
 #pragma once
-#include "..//telemetry/TelemetryFrame.h"
-#include <array>
 #include <atomic>
+#include <bit>
+#include <array>
 
-template<typename T, size_t Capacity >
+template<typename T, size_t Capacity>
 class RingBuffer {
-    static_assert(Capacity > 0);
-    static_assert(std::has_single_bit(Capacity));
+    static_assert(std::has_single_bit(Capacity), "Capacity must be a bit set");
     std::array<T, Capacity> buffer;
-    std::atomic<size_t> head = 0;
-    std::atomic<size_t> tail = 0;
+    alignas(std::hardware_destructive_interference_size) std::atomic<size_t> head{};
+    alignas(std::hardware_destructive_interference_size) std::atomic<size_t> tail{};
 public:
-    [[nodiscard]] bool try_push(const T& element);
-    [[nodiscard]] bool try_pull(T& element);
-    void push_overwrite(const T& element);
+    void tryPush(const T& element);
+    [[nodiscard]] bool tryPop(T& element);
+    void push_overwrite();
 };
 
+template<typename T, size_t Capacity> // jedyne miejsce w ktorym modyfikowany jest head - producent
+void RingBuffer<T, Capacity>::tryPush(const T &element) {
+    auto aktualnyHead = head.load(std::memory_order_relaxed);
+    if (((aktualnyHead +1) & (Capacity - 1) )== tail.load(std::memory_order_acquire)) return;
+    buffer[aktualnyHead] = element;
+    head.store((aktualnyHead +1) & (Capacity - 1) , std::memory_order_release);
+}
 
 template<typename T, size_t Capacity>
-bool RingBuffer<T, Capacity>::try_push(const T& element) {
-    size_t lokalnyHead = head.load(std::memory_order_acquire);
-    do {
-        if ((lokalnyHead + 1) % Capacity == tail.load(std::memory_order_relaxed)) return false; //sprawdzam czy nie jest poza zasegiem
-    }while (!head.compare_exchange_weak(lokalnyHead, (lokalnyHead + 1) %Capacity,std::memory_order_release));
-    buffer[lokalnyHead] = element;
+bool RingBuffer<T, Capacity>::tryPop(T& element) {
+    auto aktualnyTail = tail.load(std::memory_order_relaxed);
+    if (aktualnyTail == head.load(std::memory_order_acquire)) return false;
+    element = buffer[aktualnyTail];
+    tail.store((aktualnyTail+1) & (Capacity-1), std::memory_order_release);
     return true;
 }
 
 template<typename T, size_t Capacity>
-bool RingBuffer<T, Capacity>::try_pull(T&element) {
-    size_t lokalnyTail = tail.load(std::memory_order_acquire);
-    if (lokalnyTail == head.load(std::memory_order_relaxed)) return false; //pusty
-    element = buffer[lokalnyTail];
-    tail.store(lokalnyTail+1, std::memory_order_release);
-    return true;
+void RingBuffer<T, Capacity>::push_overwrite() {
+    auto aktualnyTail = tail.load(std::memory_order_acquire);
+    auto aktualnyHead = head.load(std::memory_order_acquire);
+    if (aktualnyHead == aktualnyTail) {
+        // jeszce nie zaimplementowane
+    }
 }
-
-template<typename T, size_t Capacity>
-void RingBuffer<T, Capacity>::push_overwrite(const T& element) {
-        auto aktualnyTail = tail.load(std::memory_order_acquire);
-        auto aktualnyHead = head.load(std::memory_order_acquire);
-        while ((aktualnyHead + 1) %Capacity == aktualnyTail) {
-            if (tail.compare_exchange_weak(aktualnyTail,(aktualnyTail+1)%Capacity,std::memory_order_release,std::memory_order_acquire)) {
-                break;
-            }
-        }
-        buffer[aktualnyHead] = element;
-        head.store((aktualnyHead + 1) %Capacity, std::memory_order_release);
-}
-

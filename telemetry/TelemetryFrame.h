@@ -16,7 +16,7 @@ struct TelemetryFrame {
     // poziom naladowania bateri - procenty
     float battery_percentage;
     // znacznik czasu w mikrosekundach
-    std::chrono::steady_clock timestamp_us;
+    std::chrono::microseconds timestamp_us;
 };
 
 static_assert(std::is_standard_layout<TelemetryFrame>());
