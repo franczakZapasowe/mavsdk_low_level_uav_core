@@ -12,7 +12,7 @@ class RingBuffer {
 public:
     void tryPush(const T& element);
     [[nodiscard]] bool tryPop(T& element);
-    void push_overwrite();
+    void push_overwrite(const T& element);
 };
 
 template<typename T, size_t Capacity> // jedyne miejsce w ktorym modyfikowany jest head - producent
@@ -33,10 +33,13 @@ bool RingBuffer<T, Capacity>::tryPop(T& element) {
 }
 
 template<typename T, size_t Capacity>
-void RingBuffer<T, Capacity>::push_overwrite() {
+void RingBuffer<T, Capacity>::push_overwrite(const T& element) {
+    auto aktualnyHead = head.load(std::memory_order_relaxed);
+    auto nastepnyHead = (aktualnyHead + 1) & (Capacity - 1);
+    buffer[aktualnyHead] = element;
     auto aktualnyTail = tail.load(std::memory_order_acquire);
-    auto aktualnyHead = head.load(std::memory_order_acquire);
-    if (aktualnyHead == aktualnyTail) {
-        // jeszce nie zaimplementowane
+    if (nastepnyHead == aktualnyTail){
+        tail.compare_exchange_strong(aktualnyTail, (aktualnyTail+1) & (Capacity - 1), std::memory_order_release);
     }
+    head.store(nastepnyHead, std::memory_order_release);
 }
