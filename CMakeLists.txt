@@ -11,6 +11,9 @@ add_executable(${PROJECT_NAME}
         telemetry/TelemetryFrame.h
         core/RingBuffer.h
         telemetry/Ingestor.h
+        core/FixedMemoryPool.h
+        logger/BlackboxPacket.h
+        logger/BlackboxRecorder.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
